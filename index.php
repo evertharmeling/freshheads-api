@@ -69,7 +69,7 @@ function parseRow($row, $contentType) {
     $array['familyName'] = $row['family_name'];
     $array['alternateName'] = $row['alternate_name'];
     $array['jobTitle'] = $row['job_title'];
-    $array['birthDate'] = new \DateTime($row['birth_date']);
+    $array['birthDate'] = $row['birth_date'];
     $array['gender'] = $row['gender'];
     $array['image'] = $row['image'];
     $array['interests'] = array_map('trim', explode(',', $row['interests']));
@@ -94,7 +94,7 @@ function parseRow($row, $contentType) {
     } else {
         $array['college'] = null;
     }
-    $array['inServiceSince'] = new \DateTime($row['in_service_since']);
+    $array['inServiceSince'] = $row['in_service_since'];
     $array['facebookUrl'] = $row['facebook_url'];
     $array['twitterUrl'] = $row['twitter_url'];
     $array['linkedinUrl'] = $row['linkedin_url'];
@@ -108,15 +108,15 @@ function parseRow($row, $contentType) {
 
             $context['xsd'] = 'http://www.w3.org/2001/XMLSchema#';
             $context['schema'] = 'http://schema.org/';
-            $context['givenName'] = ['@id' => 'schema:givenName', '@type' => '@id'];
-            $context['additionalName'] = ['@id' => 'schema:additionalName', '@type' => '@id'];
-            $context['familyName'] = ['@id' => 'schema:familyName', '@type' => '@id'];
-            $context['alternateName'] = ['@id' => 'schema:alternateName', '@type' => '@id'];
-            $context['jobTitle'] = ['@id' => 'schema:jobTitle', '@type' => '@id'];
-            $context['birthDate'] = ['@id' => 'schema:birthDate', '@type' => '@id'];
-            $context['gender'] = ['@id' => 'schema:gender', '@type' => '@id'];
-            $context['birthLocation'] = ['@id' => 'schema:City', '@type' => '@id'];
-            $context['homeLocation'] = ['@id' => 'schema:City', '@type' => '@id'];
+            $context['givenName'] = ['@id' => 'schema:givenName', '@type' => 'xsd:string'];
+            $context['additionalName'] = ['@id' => 'schema:additionalName', '@type' => 'xsd:string'];
+            $context['familyName'] = ['@id' => 'schema:familyName', '@type' => 'xsd:string'];
+            $context['alternateName'] = ['@id' => 'schema:alternateName', '@type' => 'xsd:string'];
+            $context['jobTitle'] = ['@id' => 'schema:jobTitle', '@type' => 'xsd:string'];
+            $context['birthDate'] = ['@id' => 'schema:birthDate', '@type' => 'xsd:date'];
+            $context['gender'] = ['@id' => 'schema:gender', '@type' => 'xsd:string'];
+            $context['birthLocation'] = ['@id' => 'schema:City'];
+            $context['homeLocation'] = ['@id' => 'schema:City'];
 
             $array = [
                     '@context' => $context,
@@ -125,13 +125,15 @@ function parseRow($row, $contentType) {
                 ] + $array;
 
             $array['homeLocation'] = [
-                'name' => $array['homeLocation'],
-                '@id' => 'http://dbpedia.org/resource/' . urlencode($array['homeLocation'])
+                '@id' => 'http://dbpedia.org/resource/' . urlencode($array['homeLocation']),
+                '@type' => 'schema:City',
+                'label' => $array['homeLocation'],
             ];
 
             $array['birthLocation'] = [
-                'name' => $array['birthLocation'],
-                '@id' => 'http://dbpedia.org/resource/' . urlencode($array['birthLocation'])
+                '@id' => 'http://dbpedia.org/resource/' . urlencode($array['birthLocation']),
+                '@type' => 'schema:City',
+                'label' => $array['birthLocation'],
             ];
 
             break;
@@ -140,9 +142,7 @@ function parseRow($row, $contentType) {
     }
 
     if ($contentType == CONTENT_TYPE_NQUADS) {
-        $quads = JsonLD::toRdf(json_encode($array));
-        $nquads = new NQuads();
-        $array = $nquads->serialize($quads);
+        $array = (new NQuads())->serialize(JsonLD::toRdf(json_encode($array)));
     } else {
         $array = json_encode($array);
     }
